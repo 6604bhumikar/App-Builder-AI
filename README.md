@@ -4,6 +4,10 @@ Generative AI | Agentic AI | LangChain | LangGraph | Pydantic
 
 App-Builder AI converts natural language product prompts into structured codebases using validated tool schemas and a multi-step agent workflow. It ships with a FastAPI backend, a React operator console, deterministic offline generation, and optional LangChain/OpenAI integration for richer planning.
 
+## Screenshot
+
+![App-Builder AI console](docs/screenshots/app-builder-console.png)
+
 ## What It Builds
 
 - Project blueprint with product summary, stack choices, and implementation phases
