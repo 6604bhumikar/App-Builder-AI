@@ -11,5 +11,7 @@ def test_generate_project_returns_valid_manifest() -> None:
 
     assert project.blueprint.name
     assert project.review.score >= 90
+    assert project.blueprint.api_endpoints
+    assert project.workflow_trace[-1].name == "Quality review"
     assert any(file.path == "backend/app/main.py" for file in project.files)
     assert any(call.name.value == "write_file" for call in project.tool_calls)

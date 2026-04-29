@@ -1,7 +1,7 @@
 import re
 
 from app_builder_ai.agents.state import BuilderState
-from app_builder_ai.schemas.projects import Blueprint, GeneratedFile, ReviewReport
+from app_builder_ai.schemas.projects import Blueprint, GeneratedFile, ReviewReport, WorkflowStep
 from app_builder_ai.schemas.tools import (
     CreateApiRouteArgs,
     CreateFileArgs,
@@ -20,10 +20,48 @@ def _project_name(prompt: str) -> str:
     return " ".join(words).title() if words else "Generated App"
 
 
+def _stack_commands(target_stack: str) -> list[str]:
+    if target_stack == "python-cli":
+        return ["cd backend", "python -m pip install -e .", "python -m app.main"]
+    if target_stack == "mern":
+        return ["npm install", "npm run dev", "npm test"]
+    return [
+        "cd backend && python -m pip install -e .",
+        "python -m uvicorn app.main:app --reload",
+        "cd frontend && npm install",
+        "npm run dev",
+    ]
+
+
+def _feature_keywords(prompt: str) -> list[str]:
+    prompt_lower = prompt.lower()
+    mapping = {
+        "auth": "Role-based authentication",
+        "billing": "Subscription billing",
+        "analytics": "Analytics dashboard",
+        "chat": "Realtime collaboration",
+        "notification": "Notification center",
+        "audit": "Audit log",
+        "api": "Public API documentation",
+        "ai": "AI assistant workflow",
+        "course": "Learning content management",
+        "kanban": "Kanban workflow",
+    }
+    found = [feature for keyword, feature in mapping.items() if keyword in prompt_lower]
+    return found or ["Workspace management", "Dashboard insights", "User settings"]
+
+
 def plan_node(state: BuilderState) -> BuilderState:
     request = state["request"]
     brief = LlmPlanner().summarize(request.prompt)
-    return {**state, "brief": brief}
+    trace = [
+        WorkflowStep(
+            name="Prompt intake",
+            status="completed",
+            detail=f"Validated {len(request.prompt)} characters for a {request.project_type} build.",
+        )
+    ]
+    return {**state, "brief": brief, "workflow_trace": trace}
 
 
 def architect_node(state: BuilderState) -> BuilderState:
@@ -39,9 +77,36 @@ def architect_node(state: BuilderState) -> BuilderState:
             "Validated code generation tool calls",
             "Generated file manifest preview",
             "Review and quality checklist",
+            *_feature_keywords(request.prompt),
         ],
+        data_entities=[
+            "User",
+            "Workspace",
+            "Project",
+            "GeneratedFile",
+            "ToolCall",
+            "ReviewReport",
+        ],
+        api_endpoints=[
+            "GET /health",
+            "POST /api/projects/generate",
+            "GET /api/projects",
+            "GET /api/projects/{project_id}",
+            "GET /api/projects/{project_id}/manifest",
+        ],
+        implementation_plan=[
+            "Capture requirements and normalize the requested product scope",
+            "Select stack-specific backend, frontend, test, and deployment templates",
+            "Validate every generated operation through Pydantic tool contracts",
+            "Generate a file manifest with docs, code, tests, and run commands",
+            "Review quality, risks, and release readiness before export",
+        ],
+        env_vars=["OPENAI_API_KEY", "APP_BUILDER_LLM_MODEL", "DATABASE_URL", "JWT_SECRET"],
+        run_commands=_stack_commands(request.target_stack),
         architecture=[
             f"Target stack: {request.target_stack}",
+            f"Quality profile: {request.quality_profile}",
+            f"Product type: {request.project_type}",
             "FastAPI API layer with typed request and response schemas",
             "LangGraph orchestration with deterministic fallback executor",
             "React operator console for prompt submission and manifest review",
@@ -52,7 +117,15 @@ def architect_node(state: BuilderState) -> BuilderState:
             "Persistence adapter should be swapped before production use",
         ],
     )
-    return {**state, "blueprint": blueprint}
+    trace = [
+        *state["workflow_trace"],
+        WorkflowStep(
+            name="Architecture",
+            status="completed",
+            detail=f"Created {len(blueprint.data_entities)} entities and {len(blueprint.api_endpoints)} API contracts.",
+        ),
+    ]
+    return {**state, "blueprint": blueprint, "workflow_trace": trace}
 
 
 def tool_schema_node(state: BuilderState) -> BuilderState:
@@ -97,7 +170,15 @@ def tool_schema_node(state: BuilderState) -> BuilderState:
             )
         )
 
-    return {**state, "tool_calls": calls}
+    trace = [
+        *state["workflow_trace"],
+        WorkflowStep(
+            name="Tool validation",
+            status="completed",
+            detail=f"Prepared {len(calls)} typed tool calls before file generation.",
+        ),
+    ]
+    return {**state, "tool_calls": calls, "workflow_trace": trace}
 
 
 def generate_node(state: BuilderState) -> BuilderState:
@@ -107,26 +188,69 @@ def generate_node(state: BuilderState) -> BuilderState:
         GeneratedFile(
             path="README.md",
             role="docs",
-            content=f"# {blueprint.name}\n\n{blueprint.summary}\n",
+            content=(
+                f"# {blueprint.name}\n\n{blueprint.summary}\n\n"
+                "## Features\n"
+                + "\n".join(f"- {feature}" for feature in blueprint.core_features)
+                + "\n\n## Run Commands\n"
+                + "\n".join(f"- `{command}`" for command in blueprint.run_commands)
+                + "\n"
+            ),
+        ),
+        GeneratedFile(
+            path="docs/architecture.md",
+            role="docs",
+            content=(
+                f"# {blueprint.name} Architecture\n\n"
+                "## Services\n"
+                + "\n".join(f"- {item}" for item in blueprint.architecture)
+                + "\n\n## Data Entities\n"
+                + "\n".join(f"- {entity}" for entity in blueprint.data_entities)
+                + "\n"
+            ),
         ),
         GeneratedFile(
             path="backend/app/main.py",
             role="backend",
             content=(
-                "from fastapi import FastAPI\n\n"
-                "app = FastAPI(title='Generated App')\n\n"
+                "from fastapi import FastAPI\n"
+                "from pydantic import BaseModel\n\n"
+                "class Health(BaseModel):\n"
+                "    status: str\n"
+                "    service: str\n\n"
+                f"app = FastAPI(title='{blueprint.name}')\n\n"
                 "@app.get('/health')\n"
-                "def health_check():\n"
-                "    return {'status': 'ok'}\n"
+                "def health_check() -> Health:\n"
+                f"    return Health(status='ok', service='{blueprint.name}')\n"
             ),
         ),
         GeneratedFile(
             path="frontend/src/App.jsx",
             role="frontend",
             content=(
+                "const features = [\n"
+                + "\n".join(f"  '{feature}'," for feature in blueprint.core_features[:6])
+                + "\n];\n\n"
                 "export default function App() {\n"
-                f"  return <main><h1>{blueprint.name}</h1><p>{blueprint.summary}</p></main>;\n"
+                "  return (\n"
+                "    <main>\n"
+                f"      <h1>{blueprint.name}</h1>\n"
+                f"      <p>{blueprint.summary}</p>\n"
+                "      <ul>{features.map((feature) => <li key={feature}>{feature}</li>)}</ul>\n"
+                "    </main>\n"
+                "  );\n"
                 "}\n"
+            ),
+        ),
+        GeneratedFile(
+            path="backend/app/settings.py",
+            role="backend",
+            content=(
+                "from pydantic_settings import BaseSettings\n\n"
+                "class Settings(BaseSettings):\n"
+                "    database_url: str = 'sqlite:///app.db'\n"
+                "    jwt_secret: str = 'change-me'\n\n"
+                "settings = Settings()\n"
             ),
         ),
     ]
@@ -163,7 +287,20 @@ def generate_node(state: BuilderState) -> BuilderState:
         )
         for file in files
     ]
-    return {**state, "files": files, "tool_calls": [*state["tool_calls"], *write_calls]}
+    trace = [
+        *state["workflow_trace"],
+        WorkflowStep(
+            name="Code generation",
+            status="completed",
+            detail=f"Generated {len(files)} files and {len(write_calls)} write operations.",
+        ),
+    ]
+    return {
+        **state,
+        "files": files,
+        "tool_calls": [*state["tool_calls"], *write_calls],
+        "workflow_trace": trace,
+    }
 
 
 def review_node(state: BuilderState) -> BuilderState:
@@ -176,12 +313,31 @@ def review_node(state: BuilderState) -> BuilderState:
     if any(file.role == "test" for file in files):
         checks.append("Test artifacts are included")
 
+    score = 88
+    if any(file.role == "test" for file in files):
+        score += 5
+    if any(file.role == "config" for file in files):
+        score += 3
+    if len(state["blueprint"].api_endpoints) >= 4:
+        score += 2
+
     review = ReviewReport(
-        score=92 if any(file.role == "test" for file in files) else 84,
+        score=min(score, 98),
         checks=checks,
         recommendations=[
             "Connect a persistent database adapter before production deployment",
             "Run generated manifests through static analysis before execution",
+            "Add authentication provider integration for live deployments",
+            "Convert generated manifests into zip export when filesystem writes are enabled",
         ],
+        blockers=[],
     )
-    return {**state, "review": review}
+    trace = [
+        *state["workflow_trace"],
+        WorkflowStep(
+            name="Quality review",
+            status="completed",
+            detail=f"Completed {len(checks)} checks with score {review.score}.",
+        ),
+    ]
+    return {**state, "review": review, "workflow_trace": trace}

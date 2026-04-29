@@ -18,10 +18,15 @@ textarea {
   font: inherit;
 }
 
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
 .app-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 270px minmax(0, 1fr);
 }
 
 .sidebar {
@@ -69,6 +74,27 @@ nav a:hover {
   background: #1d3b57;
 }
 
+.sidebar-card {
+  margin-top: 28px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-card p,
+.sidebar-card span {
+  margin: 0;
+  color: #b9d4df;
+  font-size: 13px;
+}
+
+.sidebar-card strong {
+  display: block;
+  margin: 8px 0;
+  font-size: 36px;
+}
+
 .workspace {
   padding: 28px;
 }
@@ -83,19 +109,38 @@ nav a:hover {
 
 .topbar h2 {
   margin: 4px 0 0;
+  max-width: 850px;
   font-size: 30px;
 }
 
-.primary {
+.top-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.primary,
+.secondary {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   border: 0;
   border-radius: 8px;
   padding: 12px 16px;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.primary {
   background: #1f7a68;
   color: white;
-  cursor: pointer;
+}
+
+.secondary {
+  border: 1px solid #c7d4e2;
+  background: white;
+  color: #254b72;
 }
 
 .primary:disabled {
@@ -106,7 +151,7 @@ nav a:hover {
 .builder-grid,
 .result-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.75fr);
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.8fr);
   gap: 18px;
   align-items: start;
 }
@@ -131,6 +176,28 @@ nav a:hover {
   font-weight: 700;
 }
 
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title.split {
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.section-title h3,
+.panel h3 {
+  margin: 0 0 10px;
+}
+
+.section-title p {
+  margin: 0;
+  color: #5d6c7d;
+}
+
 textarea {
   width: 100%;
   min-height: 245px;
@@ -139,6 +206,22 @@ textarea {
   border-radius: 8px;
   padding: 14px;
   line-height: 1.5;
+}
+
+.example-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.example-row button {
+  border: 1px solid #c7d4e2;
+  border-radius: 8px;
+  background: #f8fbff;
+  color: #254b72;
+  padding: 8px 10px;
+  cursor: pointer;
 }
 
 .controls {
@@ -150,10 +233,11 @@ textarea {
 }
 
 select {
-  min-width: 180px;
+  min-width: 165px;
   border: 1px solid #c7d4e2;
   border-radius: 8px;
   padding: 10px;
+  background: white;
 }
 
 .check {
@@ -172,7 +256,7 @@ select {
 .step {
   display: grid;
   grid-template-columns: 34px 1fr;
-  align-items: center;
+  align-items: start;
   gap: 10px;
 }
 
@@ -189,17 +273,31 @@ select {
 
 .step p {
   margin: 0;
+  font-weight: 800;
 }
 
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.step small {
+  display: block;
+  margin-top: 4px;
+  color: #607085;
+  line-height: 1.35;
 }
 
-.section-title h3,
-.panel h3 {
-  margin: 0 0 10px;
+.empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 42px;
+  border: 1px dashed #b7c7d8;
+  border-radius: 8px;
+  background: #f9fbfe;
+  text-align: center;
+}
+
+.empty-state h3,
+.empty-state p {
+  margin: 0;
 }
 
 .result-main {
@@ -223,14 +321,42 @@ select {
   font-size: 13px;
 }
 
-.score-card {
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metric-card {
+  min-height: 132px;
   text-align: center;
 }
 
-.score-card strong {
+.metric-card strong {
   display: block;
-  font-size: 46px;
+  margin-top: 8px;
+  font-size: 34px;
   color: #1f7a68;
+}
+
+.metric-card p {
+  margin: 4px 0 0;
+  color: #5d6c7d;
+}
+
+.info-panel ul,
+.tool-list {
+  display: grid;
+  gap: 8px;
+  padding-left: 18px;
+  margin-bottom: 0;
+}
+
+code {
+  color: #254b72;
+  background: #edf5ff;
+  border-radius: 6px;
+  padding: 2px 5px;
 }
 
 .files-panel {
@@ -264,15 +390,47 @@ pre {
   font-size: 13px;
 }
 
-.tool-list {
+.history-list {
   display: grid;
-  gap: 8px;
-  padding-left: 18px;
+  gap: 10px;
+}
+
+.history-list button {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid #d8e2ec;
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.history-list span {
+  color: #607085;
+  font-size: 13px;
 }
 
 .error {
   color: #b42318;
   font-weight: 700;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1100px) {
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 900px) {
@@ -286,7 +444,8 @@ pre {
     position: static;
   }
 
-  .topbar {
+  .topbar,
+  .top-actions {
     align-items: flex-start;
     flex-direction: column;
   }

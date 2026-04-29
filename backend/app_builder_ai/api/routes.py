@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 
 from app_builder_ai.agents.workflow import generate_project
 from app_builder_ai.schemas.projects import GeneratedProject, GenerateProjectRequest
@@ -26,3 +27,16 @@ def get_project(project_id: UUID) -> GeneratedProject:
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
     return project
+
+
+@router.get("/projects/{project_id}/manifest")
+def download_manifest(project_id: UUID) -> JSONResponse:
+    project = project_store.get(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    filename = f"{project.blueprint.name.lower().replace(' ', '-')}-manifest.json"
+    return JSONResponse(
+        content=project.model_dump(mode="json"),
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

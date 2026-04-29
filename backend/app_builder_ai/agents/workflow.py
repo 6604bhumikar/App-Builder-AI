@@ -45,4 +45,5 @@ def generate_project(request: GenerateProjectRequest) -> GeneratedProject:
         tool_calls=final_state["tool_calls"],
         files=final_state["files"],
         review=final_state["review"],
+        workflow_trace=final_state["workflow_trace"],
     )

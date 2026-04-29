@@ -12,6 +12,8 @@ class GenerateProjectRequest(BaseModel):
     target_stack: Literal["react-fastapi", "nextjs-fastapi", "mern", "python-cli"] = "react-fastapi"
     include_tests: bool = True
     include_docker: bool = True
+    project_type: Literal["saas", "marketplace", "internal-tool", "ai-agent", "education"] = "saas"
+    quality_profile: Literal["prototype", "production", "enterprise"] = "production"
 
 
 class Blueprint(BaseModel):
@@ -19,6 +21,11 @@ class Blueprint(BaseModel):
     summary: str
     personas: list[str]
     core_features: list[str]
+    data_entities: list[str]
+    api_endpoints: list[str]
+    implementation_plan: list[str]
+    env_vars: list[str]
+    run_commands: list[str]
     architecture: list[str]
     risks: list[str]
 
@@ -33,6 +40,13 @@ class ReviewReport(BaseModel):
     score: int = Field(..., ge=0, le=100)
     checks: list[str]
     recommendations: list[str]
+    blockers: list[str] = Field(default_factory=list)
+
+
+class WorkflowStep(BaseModel):
+    name: str
+    status: Literal["completed", "warning"]
+    detail: str
 
 
 class GeneratedProject(BaseModel):
@@ -44,3 +58,4 @@ class GeneratedProject(BaseModel):
     tool_calls: list[ToolCall]
     files: list[GeneratedFile]
     review: ReviewReport
+    workflow_trace: list[WorkflowStep]
