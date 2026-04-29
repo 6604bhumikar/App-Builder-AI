@@ -57,6 +57,16 @@ npm run dev
 
 Open the frontend at `http://localhost:5173`. It expects the API at `http://localhost:8100`.
 
+## Deploy From GitHub
+
+The project is ready for Git-based deployment:
+
+- Deploy `frontend/` to Vercel.
+- Deploy `backend/` to Render.
+- Set `VITE_API_BASE_URL` in Vercel to your Render backend URL.
+
+Full steps are in [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## API
 
 Generate a project:
